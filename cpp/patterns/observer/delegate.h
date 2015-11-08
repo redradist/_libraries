@@ -1,289 +1,138 @@
-#ifndef DLGT_DELEGATE_H_
-#define DLGT_DELEGATE_H_
+#ifndef DELEGATE_H
+#define DELEGATE_H
 
+#include "observer.h"
 #include "mutex"
 
 namespace dlgt
 {
    using namespace std;
-   
-   /**
-   * non specialized template declaration for delegate
-   */
-   template <typename Class>
+   using namespace observer;
+
+   template <typename Type>
    class Delegate;
 
-   /**
-   * specialization for member functions
-   *
-   * \tparam T            class-type of the object who's member function to call
-   * \tparam R            return type of the function that gets captured
-   * \tparam params       variadic template list for possible arguments
-   *                      of the captured function
-   */
    template <typename Class, typename Return, typename... Args>
-   class Delegate<Return(Class::*)(Args...)>
+   class Delegate<Return(Class::*)(Args...)> : Observer<Return, Args...>
    {
+      using Meth = Return(Class::*)(Args...);
+
+   private:
+      recursive_mutex      *mMutex;
+      Class                &mCaller;
+      Meth                 mMeth;
+
    public:
-      using Func = Return(Class::*)(Args...);
+      Delegate() { }
 
-      Delegate(Class& callee, Func func)
-         : callee_(callee)
-         , func_(func)
-         , mutex(new recursive_mutex())
-      {}
+      Delegate(Class &aCaller, Meth aMeth)
+         : mCaller(aCaller)
+         , mMeth(aMeth)
+         , mMutex(new recursive_mutex()) { }
 
-      ~Delegate()
+      ~Delegate() { delete mMutex; }
+
+      virtual Return operator()(Args... args) const
       {
-         delete mutex;
-      }
-
-      Return operator()(Args... args) const
-      {
-         mutex->lock();
-         Return result = (callee_.*func_)(args...);
-         mutex->unlock();
+         mMutex->lock();
+         Return result = (mCaller.*mMeth)(args...);
+         mMutex->unlock();
          return result;
       }
 
-      bool operator==(const Delegate& other) const
+      operator Observer *()
       {
-         return (&callee_ == &other.callee_) && (func_ == other.func_);
+         return this;
       }
-      bool operator!= (const Delegate& other) const
-      {
-         return !((*this) == other);
-      }
-
-   private:
-      recursive_mutex   *mutex;
-      Class& callee_;
-      Func func_;
    };
 
-   /**
-   * specialization for const member functions that return void
-   */
    template <typename Class, typename... Args>
-   class Delegate<void(Class::*)(Args...)>
+   class Delegate<void(Class::*)(Args...)> : Observer<void, Args...>
    {
    public:
-      using Func = void(Class::*)(Args...);
+      using Meth = void(Class::*)(Args...);
 
-      Delegate(Class& callee, Func func)
-         : callee_(callee)
-         , func_(func)
-         , mutex(new recursive_mutex())
-      {}
+      Delegate() { }
 
-      ~Delegate()
+      Delegate(Class &aCaller, Meth aMeth)
+         : mCaller(aCaller)
+         , mMeth(aMeth)
+         , mMutex(new recursive_mutex()) { }
+
+      ~Delegate() { delete mMutex; }
+
+      virtual void operator()(Args... args) const
       {
-         delete mutex;
-      }
-
-      void operator()(Args... args) const
-      {
-         mutex->lock();
-         (callee_.*func_)(args...);
-         mutex->unlock();
+         mMutex->lock();
+         (mCaller.*mMeth)(args...);
+         mMutex->unlock();
          return;
       }
 
-      bool operator==(const Delegate& other) const
-      {
-         return (&callee_ == &other.callee_) && (func_ == other.func_);
-      }
-      bool operator!= (const Delegate& other) const
-      {
-         return !(*this == other);
-      }
-
    private:
-      recursive_mutex   *mutex;
-      Class& callee_;
-      Func func_;
+      recursive_mutex      *mMutex;
+      Class                &mCaller;
+      Meth                 mMeth;
    };
 
-   /**
-   * specialization for const member functions
-   */
-   template <typename Class, typename Return, typename... Args>
-   class Delegate<Return(Class::*)(Args...) const>
-   {
-   public:
-      using Func = Return(Class::*)(Args...) const;
-
-      Delegate(const Class& callee, Func func)
-         : callee_(callee)
-         , func_(func)
-         , mutex(new recursive_mutex())
-      {}
-
-      ~Delegate()
-      {
-         delete mutex;
-      }
-
-      Return operator()(Args... args) const
-      {
-         mutex->lock();
-         Return result = (callee_.*func_)(args...);
-         mutex->unlock();
-         return result;
-      }
-
-      bool operator==(const Delegate& other) const
-      {
-         return (&callee_ == &other.callee_) && (func_ == other.func_);
-      }
-      bool operator!= (const Delegate& other) const
-      {
-         return !(*this == other);
-      }
-
-   private:
-      recursive_mutex   *mutex;
-      const Class& callee_;
-      Func func_;
-   };
-
-   /**
-   * specialization for const member functions that return void
-   */
-   template <typename Class, typename... Args>
-   class Delegate<void(Class::*)(Args...) const>
-   {
-   public:
-      using Func = void(Class::*)(Args...) const;
-
-      Delegate(const Class& callee, Func func)
-         : callee_(callee)
-         , func_(func)
-         , mutex(new recursive_mutex())
-      {}
-
-      ~Delegate()
-      {
-         delete mutex;
-      }
-
-      void operator()(Args... args) const
-      {
-         mutex->lock();
-         (callee_.*func_)(args...);
-         mutex->unlock();
-         return;
-      }
-
-      bool operator==(const Delegate& other) const
-      {
-         return (&callee_ == &other.callee_) && (func_ == other.func_);
-      }
-      bool operator!= (const Delegate& other) const
-      {
-         return !(*this == other);
-      }
-
-   private:
-      recursive_mutex   *mutex;
-      const Class& callee_;
-      Func func_;
-   };
-
-   /**
-   * specialization for free functions
-   *
-   * \tparam R            return type of the function that gets captured
-   * \tparam params       variadic template list for possible arguments
-   *                      of the captured function
-   */
    template <typename Return, typename... Args>
-   class Delegate<Return(*)(Args...)>
+   class Delegate<Return(*)(Args...)> : Observer<Return, Args...>
    {
    public:
       using Func = Return(*)(Args...);
 
-      Delegate(Func func)
-         : func_(func)
-         , mutex(new recursive_mutex())
-      {}
+      Delegate() { }
 
-      ~Delegate()
-      {
-         delete mutex;
-      }
+      Delegate(Func aFunc)
+         : mFunc(aFunc)
+         , mMutex(new recursive_mutex()) { }
 
-      Return operator()(Args... args) const
+      ~Delegate() { delete mMutex; }
+
+      virtual Return operator()(Args... args) const
       {
-         mutex->lock();
-         Return result = (*func_)(args...);
-         mutex->unlock();
+         mMutex->lock();
+         Return result = (*mFunc)(args...);
+         mMutex->unlock();
          return result;
       }
 
-      bool operator==(const Delegate& other) const
+      /*operator Observer()
       {
-         return func_ == other.func_;
-      }
-      bool operator!= (const Delegate& other) const
-      {
-         return !((*this) == other);
-      }
+         return &this;
+      }*/
 
    private:
-      recursive_mutex   *mutex;
-      Func func_;
+      recursive_mutex      *mMutex;
+      Func                 mFunc;
    };
 
-   /**
-   * specialization for functions that return void
-   */
    template <typename... Args>
-   class Delegate<void(*)(Args...)>
+   class Delegate<void(*)(Args...)> : Observer<void, Args...>
    {
    public:
       using Func = void(*)(Args...);
 
-      Delegate(Func func)
-         : func_(func)
-         , mutex(new recursive_mutex())
-      {}
+      Delegate() { }
 
-      ~Delegate()
-      {
-         delete mutex;
-      }
+      Delegate(Func aFunc)
+         : mFunc(aFunc)
+         , mMutex(new recursive_mutex()) { }
 
-      void operator()(Args... args) const
+      ~Delegate() { delete mMutex; }
+
+      virtual void operator()(Args... args) const
       {
-         mutex->lock();
-         (*func_)(args...);
-         mutex->unlock();
+         mMutex->lock();
+         (*mFunc)(args...);
+         mMutex->unlock();
          return;
       }
 
-      bool operator==(const Delegate& other) const
-      {
-         return func_ == other.func_;
-      }
-      bool operator!= (const Delegate& other) const
-      {
-         return !((*this) == other);
-      }
-
    private:
-      recursive_mutex   *mutex;
-      Func func_;
+      recursive_mutex      *mMutex;
+      Func                 mFunc;
    };
-
-   /**
-   * function to deduce template parameters from call-context
-   */
-   template <typename Class, typename Func>
-   Delegate<Func> make_delegate(Class& obj, Func func)
-   {
-      return Delegate<Func>(obj, func);
-   }
 
    template <typename Func>
    Delegate<Func> make_delegate(Func func)
@@ -291,9 +140,17 @@ namespace dlgt
       return Delegate<Func>(func);
    }
 
-   // a little backward compatilbility layer
-   #define DELEGATE make_delegate
-   #define DELEGATE_CONST make_delegate
-   #define DELEGATE_FREE make_delegate
+   template <typename Class, typename Func>
+   Delegate<Func> make_delegate(Class &obj, Func func)
+   {
+      return Delegate<Func>(obj, func);
+   }
+
+   /*template <typename Class, typename Func>
+   typename Observer *add_delegate(Delegate<Func> &obj)
+   {
+      return reinterpret_cast<typename Observer*> (&obj);
+   }*/
 }
-#endif // DLGT_DELEGATE_H_
+
+#endif // DELEGATE_H

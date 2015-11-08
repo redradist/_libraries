@@ -1,13 +1,15 @@
-#ifndef DLGT_DELEGATE_H_
-#define DLGT_DELEGATE_H_
-
-#include "event.h"
-#include "delegate.h"
+#ifndef OBSERVER_H
+#define OBSERVER_H
 
 namespace observer
 {
-   using namespace evt;
-   using namespace dlgt; 
+   template <typename Return, typename... Args>
+   class Observer
+   {
+   public:
+      virtual ~Observer() { }
+      virtual Return operator()(Args... args) const = 0;
+   };
 }
 
-#endif
+#endif // OBSERVER_H
