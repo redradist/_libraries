@@ -8,7 +8,7 @@ namespace observer
    {
    public:
       virtual ~Observer() { }
-      virtual Return operator()(Args... args) const = 0;
+      virtual inline Return operator()(Args... args) const = 0;
    };
 }
 

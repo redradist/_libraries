@@ -12,126 +12,156 @@ namespace dlgt
    template <typename Type>
    class Delegate;
 
-   template <typename Class, typename Return, typename... Args>
-   class Delegate<Return(Class::*)(Args...)> : Observer<Return, Args...>
-   {
-      using Meth = Return(Class::*)(Args...);
-
-   private:
-      recursive_mutex      *mMutex;
-      Class                &mCaller;
-      Meth                 mMeth;
-
-   public:
-      Delegate() { }
-
-      Delegate(Class &aCaller, Meth aMeth)
-         : mCaller(aCaller)
-         , mMeth(aMeth)
-         , mMutex(new recursive_mutex()) { }
-
-      ~Delegate() { delete mMutex; }
-
-      virtual Return operator()(Args... args) const
-      {
-         mMutex->lock();
-         Return result = (mCaller.*mMeth)(args...);
-         mMutex->unlock();
-         return result;
-      }
-
-      operator Observer *()
-      {
-         return this;
-      }
-   };
-
-   template <typename Class, typename... Args>
-   class Delegate<void(Class::*)(Args...)> : Observer<void, Args...>
-   {
-   public:
-      using Meth = void(Class::*)(Args...);
-
-      Delegate() { }
-
-      Delegate(Class &aCaller, Meth aMeth)
-         : mCaller(aCaller)
-         , mMeth(aMeth)
-         , mMutex(new recursive_mutex()) { }
-
-      ~Delegate() { delete mMutex; }
-
-      virtual void operator()(Args... args) const
-      {
-         mMutex->lock();
-         (mCaller.*mMeth)(args...);
-         mMutex->unlock();
-         return;
-      }
-
-   private:
-      recursive_mutex      *mMutex;
-      Class                &mCaller;
-      Meth                 mMeth;
-   };
-
    template <typename Return, typename... Args>
-   class Delegate<Return(*)(Args...)> : Observer<Return, Args...>
+   class Delegate<Return(*)(Args...)> : public Observer<Return, Args...>
    {
-   public:
       using Func = Return(*)(Args...);
+      class IContainer { public: virtual Return call(Args...) = 0; };
 
+      template<typename Class>
+      class Container : public IContainer
+      {
+         using Meth = Return(Class::*)(Args...);
+      public:
+         Container(Class* aObj, Meth aMeth)
+            : mObj(aObj)
+            , mMeth(aMeth) { }
+      private:
+         Class    *mObj;
+         Meth     mMeth;
+      public:
+         Return call(Args... args)
+         {
+            return (mObj->*mMeth)(args...);
+         }
+      };
+
+      template<>
+      class Container<void> : public IContainer
+      {
+      public:
+         Container(Func aFunc)
+            : mFunc(aFunc) { }
+      private:
+         Func     mFunc;
+      public:
+         Return call(Args... args)
+         {
+            return (*mFunc)(args...);
+         }
+      };
+
+      IContainer  *iContainer;
+
+   public:
       Delegate() { }
+
+      template <typename Class>
+      Delegate(Class &aCaller, Return(Class::*aMeth)(Args...))
+         : mMutex(new recursive_mutex()) 
+      {
+         if (iContainer != nullptr) delete iContainer;
+         iContainer = new Container<Class>(&aCaller, aMeth);
+      }
 
       Delegate(Func aFunc)
-         : mFunc(aFunc)
-         , mMutex(new recursive_mutex()) { }
+         : mMutex(new recursive_mutex()) 
+      { 
+         if (iContainer != nullptr) delete iContainer;
+         iContainer = new Container<void>(aFunc);
+      }
 
       ~Delegate() { delete mMutex; }
 
-      virtual Return operator()(Args... args) const
+      virtual inline Return operator()(Args... args) const
       {
-         mMutex->lock();
-         Return result = (*mFunc)(args...);
-         mMutex->unlock();
-         return result;
+         if (iContainer != nullptr)
+         {
+            mMutex->lock();
+            Return result = iContainer->call(args...);
+            mMutex->unlock();
+            return result;
+         }
       }
-
-      /*operator Observer()
-      {
-         return &this;
-      }*/
 
    private:
       recursive_mutex      *mMutex;
-      Func                 mFunc;
    };
 
    template <typename... Args>
-   class Delegate<void(*)(Args...)> : Observer<void, Args...>
+   class Delegate<void(*)(Args...)> : public Observer<void, Args...>
    {
-   public:
       using Func = void(*)(Args...);
+      class IContainer { public: virtual void call(Args...) = 0; };
 
+      template<typename Class>
+      class Container : public IContainer
+      {
+         using Meth = void(Class::*)(Args...);
+      public:
+         Container(Class* aObj, Meth aMeth)
+            : mObj(aObj)
+            , mMeth(aMeth) { }
+      private:
+         Class    *mObj;
+         Meth     mMeth;
+      public:
+         void call(Args... args)
+         {
+            return (mObj->*mMeth)(args...);
+         }
+      };
+
+      template<>
+      class Container<void> : public IContainer
+      {
+      public:
+         Container(Func aFunc)
+            : mFunc(aFunc) { }
+      private:
+         Func     mFunc;
+      public:
+         void call(Args... args)
+         {
+            return (*mFunc)(args...);
+         }
+      };
+
+      IContainer  *iContainer;
+
+   public:
       Delegate() { }
 
+      template <typename Class>
+      Delegate(Class &aCaller, void(Class::*aMeth)(Args...))
+         : mMutex(new recursive_mutex())
+      {
+         if (iContainer != nullptr) delete iContainer;
+         iContainer = new Container<Class>(&aCaller, aMeth);
+      }
+
       Delegate(Func aFunc)
-         : mFunc(aFunc)
-         , mMutex(new recursive_mutex()) { }
+         : mMutex(new recursive_mutex())
+      {
+         if (iContainer != nullptr) delete iContainer;
+         iContainer = new Container<void>(aFunc);
+      }
 
       ~Delegate() { delete mMutex; }
 
-      virtual void operator()(Args... args) const
+      virtual inline void operator()(Args... args) const
       {
-         mMutex->lock();
-         (*mFunc)(args...);
-         mMutex->unlock();
+         if (iContainer != nullptr)
+         {
+            mMutex->lock();
+            iContainer->call(args...);
+            mMutex->unlock();
+         }
          return;
       }
 
    private:
       recursive_mutex      *mMutex;
-      Func                 mFunc;
    };
 
    template <typename Func>
@@ -139,18 +169,6 @@ namespace dlgt
    {
       return Delegate<Func>(func);
    }
-
-   template <typename Class, typename Func>
-   Delegate<Func> make_delegate(Class &obj, Func func)
-   {
-      return Delegate<Func>(obj, func);
-   }
-
-   /*template <typename Class, typename Func>
-   typename Observer *add_delegate(Delegate<Func> &obj)
-   {
-      return reinterpret_cast<typename Observer*> (&obj);
-   }*/
 }
 
 #endif // DELEGATE_H

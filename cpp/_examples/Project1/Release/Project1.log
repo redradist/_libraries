@@ -1,0 +1,16 @@
+﻿Build started 01.11.2015 15:21:05.
+     1>Project "D:\Projects_Programing\IBM_PC\AttackPanel\Project1\Project1\Project1.vcxproj" on node 2 (Rebuild target(s)).
+     1>ClCompile:
+         F:\ProgramFiles\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /sdl /O2 /Oi /Oy- /GL /D _MBCS /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Release\\" /Fd"Release\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt Source.cpp
+         Source.cpp
+       Link:
+         F:\ProgramFiles\Microsoft Visual Studio 14.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Projects_Programing\IBM_PC\AttackPanel\Project1\Release\Project1.exe" /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /PDB:"D:\Projects_Programing\IBM_PC\AttackPanel\Project1\Release\Project1.pdb" /OPT:REF /OPT:ICF /LTCG:incremental /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Projects_Programing\IBM_PC\AttackPanel\Project1\Release\Project1.lib" /MACHINE:X86 /SAFESEH Release\Source.obj
+         Generating code
+         All 123 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+         Finished generating code
+         Project1.vcxproj -> D:\Projects_Programing\IBM_PC\AttackPanel\Project1\Release\Project1.exe
+     1>Done Building Project "D:\Projects_Programing\IBM_PC\AttackPanel\Project1\Project1\Project1.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.92

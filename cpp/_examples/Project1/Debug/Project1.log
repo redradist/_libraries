@@ -1,0 +1,17 @@
+﻿Build started 12.11.2015 0:30:56.
+     1>Project "D:\Projects_Programing\_libraries\cpp\_examples\Project1\Project1.vcxproj" on node 2 (Rebuild target(s)).
+     1>C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppBuild.targets(392,5): warning MSB8028: The intermediate directory (Debug\) contains files shared from another project (Project1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
+     1>ClCompile:
+         F:\ProgramFiles\Microsoft Visual Studio 14.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Fo"Debug\\" /Fd"Debug\vc140.pdb" /Gd /TP /analyze- /errorReport:prompt Source.cpp
+         Source.cpp
+     1>d:\projects_programing\_libraries\cpp\_examples\project1\source.cpp(69): warning C4101: 'things': unreferenced local variable
+     1>d:\projects_programing\_libraries\cpp\patterns\observer\event.h(127): warning C4715: 'evt::Event<int (__cdecl*)(int,double)>::operator()': not all control paths return a value
+     1>d:\projects_programing\_libraries\cpp\patterns\observer\delegate.h(85): warning C4715: 'dlgt::Delegate<int (__cdecl*)(int,double)>::operator()': not all control paths return a value
+       Link:
+         F:\ProgramFiles\Microsoft Visual Studio 14.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Projects_Programing\_libraries\cpp\_examples\Debug\observer.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /Debug /PDB:"D:\Projects_Programing\_libraries\cpp\_examples\Debug\observer.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Projects_Programing\_libraries\cpp\_examples\Debug\observer.lib" /MACHINE:X86 Debug\Source.obj
+         Project1.vcxproj -> D:\Projects_Programing\_libraries\cpp\_examples\Debug\observer.exe
+     1>Done Building Project "D:\Projects_Programing\_libraries\cpp\_examples\Project1\Project1.vcxproj" (Rebuild target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:00.70

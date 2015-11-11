@@ -2,7 +2,6 @@
 #define EVENT_H
 
 #include "observer.h"
-#include "mutex"
 #include "vector"
 
 namespace evt 
@@ -17,7 +16,7 @@ namespace evt
    class Event<Return(*)(Args...)>
    {
    public:
-      using Observer = Observer<Return, Args...>;
+      using Observer = observer::Observer<Return, Args...>;
       using Func = Return(*)(Args...);
       
       class CallBack : public Observer
@@ -29,28 +28,53 @@ namespace evt
          CallBack(Func aFunc)
             : mFunc(aFunc)  { }
 
-         virtual Return operator()(Args... args) const
+         virtual inline Return operator()(Args... args) const
          {
             return (*mFunc)(args...);
          }
       }; // Static
-
-      template <typename Class>
+      
       class Listener : public Observer
       {
-         using Meth = Return(Class::*)(Args...);
+         class IContainer { public: virtual Return call(Args...) = 0; };
+         
+         template<typename Class>
+         class Container : public IContainer
+         {
+            using Meth = Return(Class::*)(Args...);
+         public: 
+            Container(Class* aObj, Meth aMeth)
+               : mObj(aObj)
+               , mMeth(aMeth) { }
+         private: 
+            Class    *mObj; 
+            Meth     mMeth;
+         public: 
+            Return call(Args... args)
+            {
+               return (mObj->*mMeth)(args...);
+            }
+         };
 
-         Class  *mCaller;
-         Meth   mMeth; // Address of the function on the delegate object.
+         IContainer  *iContainer;
 
       public:
-         Listener(Class *aCaller, Meth aMeth)
-            : mCaller(aCaller)
-            , mMeth(aMeth) { }
-
-         virtual Return operator()(Args... args) const
+         template <typename Class>
+         Listener(Class *aCaller, Return(Class::*aMeth)(Args...))
+            : iContainer(nullptr)
          {
-            return (mCaller->*mMeth)(args...);
+            if (iContainer != nullptr) delete iContainer;
+            iContainer = new Container<Class>(aCaller, aMeth);
+         }
+         
+         virtual ~Listener()
+         {
+            if (iContainer != nullptr) delete iContainer;
+         }
+
+         virtual inline Return operator()(Args... args) const
+         {
+            return iContainer->call(args...);
          }
       }; // Non-static
 
@@ -58,7 +82,7 @@ namespace evt
 
       Event(Func aFunc)
       {
-         *this += new Listener(aFunc);
+         *this += new CallBack(aFunc);
       }
 
       Event(Observer* aPtr)
@@ -116,6 +140,18 @@ namespace evt
    typename Event<Func>::CallBack make_callback(Func func)
    {
       return typename Event<Func>::CallBack(func);
+   }
+
+   template <typename Func>
+   void add_callback(Event<Func> &evt, Func func)
+   {
+      evt += new Event<Func>::CallBack(func);
+   }
+
+   template <typename Func, typename Class, typename Meth>
+   void add_listener(Event<Func> &evt, Class obj, Meth meth)
+   {
+      evt += new Event<Func>::Listener(&obj, meth);
    }
 }
 
