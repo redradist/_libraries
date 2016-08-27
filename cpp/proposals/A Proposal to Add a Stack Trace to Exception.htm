@@ -1,0 +1,71 @@
+<!DOCTYPE html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>A Proposal to Add a Stack Trace to Exception</title>
+</head><body>b
+
+<font size="-1">Denis Kotov &lt;redradist@gmail.com&gt; <br>31 Jul 2016
+<br>Doc number ???</font>
+
+<h1>A Proposal to Add a Stack Trace to Exception</h1>
+<h2>I. Overview</h2>
+<p>When you work on big project, the posibility of making by somebody mistake is very big.</p>
+<p>To feedback user about this error the best way throw <strong><em>exception</em> </strong>instead of <strong><em>return -1.</em></strong></p>
+<p>But when you desided to use exception in your program, you will face with the issue: <em>"Where this exception was throwed ?"</em></p>
+<h2>II. Motivation</h2>
+<p>To understand the problem let's consider the following code:</p>
+<blockquote>
+<pre>Socket *open_socket( void ) <br />{<br /> Socket *socket = new Socket();<br /> if (socket-&gt;open("", 80))<br /> {<br />    ....<br /> }<br /> else<br /> {<br />    throw socket_error("Cannot open socket !");<br /> }<br />}</pre>
+</blockquote>
+<blockquote>
+<pre>void main( void )
+{
+  ....<br />  try {<br />     Socket *socket = open_socket( void );<br />  }<br />  catch(socket_error &amp;error)<br />  {<br />     // How to print stack trace<br />     std::cout &lt;&lt; error.(...) &lt;&lt; std::endl;<br />  }<br />}</pre>
+</blockquote>
+<p>In this code the main question is:</p>
+<p><em>&nbsp;&nbsp;&nbsp; "How to know in which function, in which file exception happens ?"</em></p>
+<p>If we have such code it is easy to find the palce, but what if you have a hundered file:</p>
+<p><em>&nbsp;&nbsp;&nbsp; "In which of this files and in which exactly function exception happens ?"</em></p>
+<p>&nbsp;Let's consider the posibly solution for this issue:</p>
+<blockquote>
+<pre>Socket *open_socket( void ) <br />{<br /> Socket *socket = new Socket();<br /> if (socket-&gt;open("", 80))<br /> {<br />     ....<br /> }<br /> else<br /> {<br />     throw socket_error("Cannot open socket !");<br /> }<br />}</pre>
+</blockquote>
+<blockquote>
+<pre>void main( void )
+{
+  ....<br />  try {<br />     Socket *socket = open_socket( void );<br /> }<br /> catch(socket_error &amp;error)<br /> {<br />     std<span class="sy4">::</span><span class="me2">exception_ptr </span>eptr <span class="sy1">=</span> std::current_exception<span class="br0">(</span><span class="br0">)</span><span class="sy4">;</span> <span class="co1">// capture</span><br />     std::cout &lt;&lt; eptr.print_stack_trace() &lt;&lt; std::endl;<br /> }<br />}</pre>
+</blockquote>
+<p>This solution will work even in the following example:</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Socket *open_socket( void )</p>
+<p>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; {</p>
+<blockquote>
+<pre> Socket *socket = new Socket();<br /> if (socket-&gt;open("", 80))<br /> {<br />     ....<br /> }<br /> else<br /> {<br />     int error = 2; // Error code<br />     throw error;<br /> }<br />}</pre>
+</blockquote>
+<blockquote>
+<pre>void main( void )
+{
+  ....<br />  try {<br />     Socket *socket = open_socket( void );<br /> }<br /> catch(...)<br /> {<br />     std<span class="sy4">::</span><span class="me2">exception_ptr </span>eptr <span class="sy1">=</span> std::current_exception<span class="br0">(</span><span class="br0">)</span><span class="sy4">;</span> <span class="co1">// capture</span><br />     std::cout &lt;&lt; eptr.print_stack_trace() &lt;&lt; std::endl;<br /> }<br />}</pre>
+</blockquote>
+<h2>III. Impact On the Standard</h2>
+<p>Extending <code>std::</code><span class="me2">exception_ptr</span> as proposed is compatible with existing code and does not affect any other parts of the standard library, we only need extend meaning of <code>exception_ptr</code> like class and some functionality<code>.</code></p>
+<h2>IV. Design Decisions</h2>
+<p>The meaning of type <em>exception_ptr</em> should extended with providing contract.</p>
+<blockquote><tt>typedef /*unspecified*/ exception_ptr;</tt></blockquote>
+<blockquote>should be changed on</blockquote>
+<blockquote><tt>typedef class _<tt>exception</tt> exception_ptr;</tt></blockquote>
+<blockquote>or</blockquote>
+<blockquote><tt>typedef class&nbsp;<tt>/*compiler specific name*/</tt> exception_ptr;</tt></blockquote>
+<blockquote>class <tt>_<tt>exception</tt></tt></blockquote>
+<blockquote>{</blockquote>
+<blockquote>public:</blockquote>
+<blockquote>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // stack_trace_item is a class that is not defined yet</blockquote>
+<blockquote>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;stack_trace_item *stack_trace() const;</blockquote>
+<blockquote>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; char const *print_stack_trace() const;</blockquote>
+<blockquote>}</blockquote>
+<p>The meaning of type <em>exception_ptr</em> should extended with providing contract.</p>
+<h2>V. Implementability</h2>
+<p>A proof of concept implementation is available in StackWalker and BackTrace library for Linux.</p>
+<h2>VI. References</h2>
+<ul>
+<li>[1] StackWaker on Windows, <a href="https://msdn.microsoft.com/en-us/library/windows/desktop/ms680650(v=vs.85).aspx">https://msdn.microsoft.com/en-us/library/windows/desktop/ms680650(v=vs.85).aspx</a></li>
+<li>[2] BackTrace, <a href="http://man7.org/linux/man-pages/man3/backtrace.3.html">http://man7.org/linux/man-pages/man3/backtrace.3.html</a></li>
+</ul></body></html>
