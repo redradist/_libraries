@@ -1,0 +1,23 @@
+{
+    "manifest_version" : 2,
+    "version"          : "1.2",
+    "name"             : "Coursera Downloader",
+    "description"      : "Coursera Downloader",
+    "background"       : {
+        "page" : "background.html"
+    },
+    "icons"            : {
+		"48"  : "assets/images/icon.png",
+        "128" : "assets/images/icon128.png"
+    },
+    "options_page"     : "options.html",
+    "browser_action"   : {
+        "default_icon" : "assets/images/icon.png"
+    },
+    "permissions"      : [
+        "tabs",
+        "downloads",
+        "http://*/*",
+        "https://*/*"
+    ]
+}

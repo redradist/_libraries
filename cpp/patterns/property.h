@@ -1,3 +1,4 @@
+#pragma once
 #ifndef PROPERTY_H
 #define PROPERTY_H
 
@@ -11,7 +12,10 @@ struct property {
    using Getter = std::function<ValueType(void)>;
    using Setter = std::function<void(ValueType)>;
    
-   property() noexcept = default;
+   property() = default;
+
+   property(property const &) = delete;
+   property(property &&) = delete;
 
    property(Getter getter) noexcept
    : pGet{ getter }
